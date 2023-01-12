@@ -1,0 +1,17 @@
+0: 0.png
+x: 1.png
+2: 2.png
+a: 3.png
+4: 4.png
+5: 5.png
+6: 6.png
+7: 7.png
+8: 8.png
+9: 9.png
+9: a.png
+a: a2.png
+1: l.png
+5: s.png
+U: vCap.png
+h: x.png
+x: xCap.png
