@@ -68,7 +68,7 @@ def train_net(nnet, train_dl, valid_dl=None):
             validate()
 
     print("Time taken to train: {:.2f}s".format(time.time() - start))
-    torch.save(nnet.state_dict(), "nnet.pt")
+    torch.save(nnet.state_dict(), "./models/nnet.pt")
 
 
 def tfrot(img):

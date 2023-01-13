@@ -34,7 +34,7 @@ def tfvflip(img):
 
 if __name__ == "__main__":
     nnet = CNN()
-    nnet.load_state_dict(torch.load("nnet.pt"))
+    nnet.load_state_dict(torch.load("./models/nnet.pt"))
 
     test_data = EMNIST(root="./data", split="byclass", train=False, download=True,
         transform=transforms.Compose([

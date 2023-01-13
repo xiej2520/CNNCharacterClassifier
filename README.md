@@ -27,12 +27,12 @@ To train a model, run
 python train.py
 ```
 
-An output model will be exported at `nnet.pt`.
+An output model will be exported at `./models/nnet.pt`.
 
 Model architecture and hyperparameters can be tuned in `cnn.py` and `train.py`.
 Uncomment some code in `train.py` to use a validation set during training.
 
-To test the model at `nnet.pt`, run
+To test the model at `./models/nnet.pt`, run
 
 ```Bash
 python test.py
@@ -40,7 +40,7 @@ python test.py
 
 ## To Run
 
-`nnet.pt` is required to run `main.py`, a pretrained one is provided.
+`./models/nnet.pt` is required to run `main.py`, a pretrained one is provided.
 
 `main.py` can be run with two options:
 
@@ -63,3 +63,27 @@ should be square, with black backgrounds and large white characters centered in
 the image.
 
 ![Example C](examples/cCap.png) ![Example N](examples/nCap.png) ![Example N2](examples/nCap2.png)
+
+## Run Web App
+
+The model can be run in the browser with a locally hosted webpage.
+
+1. A `./models/nnet.onnx` file is needed to run the model in the browser, and is
+   provided. To generate a new one from `./models/nnet.pt`, run
+
+   ```Bash
+     python to_onnx.py
+   ```
+
+2. Run
+
+   ```Bash
+   python -m http.server
+   ```
+
+   to host the page, and navigate to `localhost:8000` in a web browser.
+3. Provide input to the model by drawing on the canvas, or by uploading an image.
+
+* The model currently appears to be producing inaccurate results on the browser.
+
+![Web app screenshot](examples/webapp.png)

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		* {
+			font-family: "Lucida Console", monospace;
+		}
+		body {
+			background-color: #44c;
+			color: white;
+		}
+		#canvas {
+			border: 1px solid #55f;
+		}
+		#output {
+			display: flex;
+			flex-direction: row;
+			margin: 10px;
+		}
+		#pieOutput {
+			width: 400px !important;
+			height: 400px !important;
+		}
+		#txtOutput {
+			width: 30%;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="canvas" width="280" height="280">
+
+	</canvas>
+	<canvas id="scaleCanvas" width="28" height="28"></canvas>
+	<br/>
+	<button onclick="clearCanvas()">
+		Clear
+	</button>
+	<input id="fileUpload" type="file"/>
+	<button onclick="uploadFile()">Submit Image</button>
+
+	<div id="output">
+		<div id="txtOutput"></div>
+		<div id="pieOutput">
+			<canvas id="pieChart" width="400" height="400"></canvas>
+		</div>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"> </script>
+
+	<!-- Running Model -->
+	<script>
+		let session = null;
+
+		const scCanvas = document.getElementById("scaleCanvas");
+		const outDiv = document.getElementById("txtOutput");
+		const scCtx = scCanvas.getContext("2d", {willReadFrequently: true});
+
+		function imgToTensor(data) {
+			const grayData = new Float32Array(28 * 28);
+			for (let i=0; i<data.length; i+= 4) {
+				// brightness from RGB
+				//let gray = (data[i]*.299 + data[i + 1]*.587 + data[i + 2]*.114) / 255;
+				let gray = data[i] / 255; // only black and white here
+				grayData[i/4] = gray;
+			}
+			return new ort.Tensor("float32", grayData, [1, 1, 28, 28]); // 28x28 image
+		}
+
+		let toChar = [];
+		for (let i=0; i<10; i++) {
+			toChar.push(String(i));
+		}
+		for (let i=10; i<36; i++) {
+			toChar.push(String.fromCharCode(i + 55));
+		}
+		for (let i=36; i<62; i++) {
+			toChar.push(String.fromCharCode(i + 61));
+		}
+		async function runModel() {
+			if (session === null) {
+				session = await ort.InferenceSession.create("./models/nnet.onnx", { executionProviders: ["wasm",]});
+			}
+			const imgData = ctx.getImageData(0, 0, 280, 280);
+			scCtx.drawImage(ctx.canvas, 0, 0, 28, 28);
+			const scaleData = scCtx.getImageData(0, 0, 28, 28).data;
+			const feeds = { in : imgToTensor(scaleData) };
+			const results = await session.run(feeds);
+
+			let argRes = [];
+			for (let i=0; i<62; i++) {
+				argRes.push([i, results.out.data[i]]);
+			}
+			argRes.sort((a, b) => { return b[1] - a[1]; }); // highest first
+			// softmax
+			const C = argRes.reduce((max, cur) => Math.max(max, cur[1]), -Infinity);
+			const d = argRes.map((x) => Math.exp(x[1] - C)).reduce((a, b) => a + b);
+			let argResConv = argRes.map(([ccode, act]) => [toChar[ccode], Math.exp(act - C) / d]);
+			argResConv = argResConv.filter(([c, p]) => p > 0.00001).slice(0, 16);
+			if (pieChart !== null) {
+				pieChart.destroy();
+			}
+			pieChart = makePie(argResConv);
+			let s = argResConv.reduce((s, [c, p]) => `${s} ${c}, Probability: ${p.toFixed(4)} <br/>`, "")
+			outDiv.innerHTML = s;
+		}
+		window.setInterval(() => { if (draw == -1) { runModel(); draw = 0; }}, 1000);
+	</script>
+
+	<!-- Canvas Drawing -->
+	<script>
+		const canvas = document.getElementById("canvas");
+		canvas.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); }
+		const ctx = canvas.getContext("2d", {willReadFrequently: true});
+		let draw = 0; // -1: wait for model, 0: not drawing
+		window.addEventListener("mousedown", (e) => {
+			if (e.button === 0) {
+				draw = 1; // left click
+			}
+			else {
+				draw = 2; // right click
+			}
+		});
+		window.addEventListener("mouseup", (e) => {
+			draw = -1;
+		})
+		window.addEventListener("mousemove", (e) => {
+			let pX = e.clientX - canvas.getBoundingClientRect().left;
+			let pY = e.clientY - canvas.getBoundingClientRect().top;
+			if (pX > 280 || pY > 280 || draw == 0) {
+				return;
+			}
+			ctx.moveTo(pX, pY);
+			if (draw == 1) {
+				ctx.fillStyle = "white";
+				ctx.fillRect(pX-5, pY-5, 10, 10);
+			}
+			else if (draw == 2) {
+				ctx.fillStyle = "black";
+				ctx.fillRect(pX-25, pY-25, 50, 50);
+			}
+			ctx.fill();
+		});
+		function clearCanvas() {
+			ctx.fillStyle = "black";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.fill();
+		}
+		clearCanvas();
+		
+		function uploadFile() {
+			let file = document.getElementById("fileUpload").files[0];
+			let url = URL.createObjectURL(file);
+			let img = new Image();
+			img.onload = function() {
+				ctx.drawImage(img, 0, 0, 280, 280);
+			}
+			img.src = url;
+			draw = -1; // trigger mdoel run
+		}
+	</script>
+
+	<!-- Pie Chart -->
+	<script>
+		Chart.defaults.color = "#ffffff";
+		const pieCtx = document.getElementById("pieChart");
+		let pieChart = null;
+		function makePie(arr) {
+			return new Chart(pieCtx, {
+				type: "pie",
+				options: {
+					animation: {
+						animateRotate: false
+					},
+					responsive: true,
+					maintainAspectRatio: false,
+					legend: {
+						labels: {
+							fontColor: "white",
+							fontSize: 18,
+						}
+					},
+					tooltips: {
+						callbacks: {
+							label: function(item, data) {
+								// {Label}: {Prob}
+								return data.labels[item.index] + ": " + data.datasets[0].data[item.index].toFixed(4);
+							}
+						}
+					}
+				},
+				data: {
+					datasets: [{
+						backgroundColor: [
+							"rgb(255, 100, 132)",
+							"rgb(54, 162, 235)",
+							"rgb(255, 205, 86)",
+							"rgb(80, 255, 60)"
+						],
+						data: arr.map(([c, p]) => p)
+					}],
+					labels: arr.map(([c, p]) => c),
+				},
+			});
+		}
+	</script>
+</body>
+</html>

@@ -43,7 +43,7 @@ def load_image(path):
 if __name__ == "__main__":
 
     nnet = CNN()
-    nnet.load_state_dict(torch.load("nnet.pt"))
+    nnet.load_state_dict(torch.load("./models/nnet.pt"))
 
 
     if len(sys.argv) == 3 and sys.argv[1] == "-f":
