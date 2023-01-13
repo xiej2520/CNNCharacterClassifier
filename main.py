@@ -29,9 +29,11 @@ def tfvflip(img):
     return TF.vflip(img)
 
 def pred(nnet, img):
-    output = nnet(img.float())
-    val, index = torch.max(output.data, 1)
-    return index.item()
+    nnet.eval()
+    with torch.no_grad():
+        output = nnet(img.float())
+        val, index = torch.max(output.data, 1)
+        return index.item()
 
 def load_image(path):
     img = cv2.resize(cv2.imread(path, cv2.IMREAD_GRAYSCALE), (28, 28))

@@ -7,6 +7,8 @@ trained on the EMNIST database.
 
 `[A-Z]|[a-z]|[0-9]`
 
+[Static web page demo](https://xiej2520.github.io/CNNCharacterClassifier/)
+
 1680s to train the model to 89.34% training accuracy, 87.87% test accuracy on a
 GTX 1660 TI, 30 epochs.
 
@@ -83,6 +85,8 @@ The model can be run in the browser with a locally hosted webpage.
 
    to host the page, and navigate to `localhost:8000` in a web browser.
 3. Provide input to the model by drawing on the canvas, or by uploading an image.
+   * Drawn characters should preferably take up the entire canvas.
+   * Uploaded images should preferably be white text on black background.
 
 * The model currently appears to be producing inaccurate results on the browser.
 

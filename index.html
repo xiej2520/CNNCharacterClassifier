@@ -9,6 +9,9 @@
 			background-color: #44c;
 			color: white;
 		}
+		h2, h5 {
+			font-family: sans-serif;
+		}
 		#canvas {
 			border: 1px solid #55f;
 		}
@@ -27,6 +30,8 @@
 	</style>
 </head>
 <body>
+	<h2>Convolutional Neural Network for Classifying Characters</h1>
+	<h5>Draw <strong>large</strong> characters!</h5>
 	<canvas id="canvas" width="280" height="280">
 
 	</canvas>
@@ -49,23 +54,6 @@
 
 	<!-- Running Model -->
 	<script>
-		let session = null;
-
-		const scCanvas = document.getElementById("scaleCanvas");
-		const outDiv = document.getElementById("txtOutput");
-		const scCtx = scCanvas.getContext("2d", {willReadFrequently: true});
-
-		function imgToTensor(data) {
-			const grayData = new Float32Array(28 * 28);
-			for (let i=0; i<data.length; i+= 4) {
-				// brightness from RGB
-				//let gray = (data[i]*.299 + data[i + 1]*.587 + data[i + 2]*.114) / 255;
-				let gray = data[i] / 255; // only black and white here
-				grayData[i/4] = gray;
-			}
-			return new ort.Tensor("float32", grayData, [1, 1, 28, 28]); // 28x28 image
-		}
-
 		let toChar = [];
 		for (let i=0; i<10; i++) {
 			toChar.push(String(i));
@@ -76,6 +64,23 @@
 		for (let i=36; i<62; i++) {
 			toChar.push(String.fromCharCode(i + 61));
 		}
+
+		let session = null;
+
+		const scCanvas = document.getElementById("scaleCanvas");
+		const outDiv = document.getElementById("txtOutput");
+		const scCtx = scCanvas.getContext("2d", {willReadFrequently: true});
+
+		function imgToTensor(data) {
+			const grayData = new Float32Array(28 * 28);
+			for (let i=0; i<data.length; i+= 4) {
+				// brightness from RGB
+				let gray = (data[i]*.299 + data[i + 1]*.587 + data[i + 2]*.114) / 255;
+				grayData[i/4] = gray;
+			}
+			return new ort.Tensor("float32", grayData, [1, 1, 28, 28]); // 28x28 image
+		}
+
 		async function runModel() {
 			if (session === null) {
 				session = await ort.InferenceSession.create("./models/nnet.onnx", { executionProviders: ["wasm",]});
@@ -132,7 +137,7 @@
 			ctx.moveTo(pX, pY);
 			if (draw == 1) {
 				ctx.fillStyle = "white";
-				ctx.fillRect(pX-5, pY-5, 10, 10);
+				ctx.fillRect(pX-15, pY-15, 30, 30);
 			}
 			else if (draw == 2) {
 				ctx.fillStyle = "black";
